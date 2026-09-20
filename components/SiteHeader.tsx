@@ -33,7 +33,7 @@ export function SiteHeader() {
             About<span className="hidden sm:inline"> &amp; contact</span>
           </Link>
           <Link
-            href="/rooms/ocean"
+            href="/#book"
             className="ml-1 rounded-full bg-forest px-4 py-2 font-medium text-paper transition hover:bg-forest-dark"
           >
             Book

@@ -22,6 +22,13 @@ export type AmenityGroup = {
 export type Photo = {
   src: string;
   alt: string;
+  /**
+   * "room" photos show the room itself and are the only ones the homepage
+   * gallery advertises as rooms. "place" photos — the building, the street,
+   * the coin laundry — are useful on the room page but would be misleading
+   * mixed in with the rooms.
+   */
+  kind: "room" | "place";
 };
 
 export type Room = {
@@ -83,12 +90,16 @@ export const ROOMS: Room[] = [
     maxGuests: 2,
     beds: "1 double bed",
     floor: "Semi-basement",
-    // TODO: confirm these with the owner before going live.
-    nightlyRateJpy: 12000,
-    cleaningFeeJpy: 3000,
+    // US$75 a night, cleaning included. ¥11,800 was ~US$75 at ¥156.9/US$ on
+    // 2026-09-20; the rate moves, so revisit this if the dollar figure is the
+    // one that matters to you. Guests are always charged the yen amount.
+    nightlyRateJpy: 11800,
+    cleaningFeeJpy: 0,
     minNights: 1,
     maxNights: 28,
-    directDiscountPercent: 20,
+    // Set this above 0 to advertise a direct-booking saving: the site then
+    // shows nightlyRateJpy struck through and charges the discounted price.
+    directDiscountPercent: 0,
     description: [
       "The Ocean room (22 m²) is located in the semi-basement and is the largest room on this floor, though it is a typical size for Tokyo. Compared to the other rooms on the same floor, it is relatively easy for sunlight to enter.",
       "It is an 8-minute walk from Takadanobaba Station on the JR Yamanote Line, which runs through the centre of Tokyo. Takadanobaba is well placed: 5 minutes to Shinjuku, 5 minutes to Ikebukuro, 10 minutes to Harajuku and 25 minutes to Roppongi by train.",
@@ -98,26 +109,31 @@ export const ROOMS: Room[] = [
     photos: [
       {
         src: "/images/ocean-interior.png",
-        alt: "The Ocean room looking towards the TV, air conditioning unit and the adjoining kitchenette",
+        alt: "Looking towards the TV, air conditioning unit and the adjoining kitchenette",
+        kind: "room",
       },
       {
         // NOTE: this photo has a "September campaign / 20% OFF" graphic burnt
         // into it. Replace it with a clean version when you have one — the
         // discount is shown by the site itself, from directDiscountPercent.
         src: "/images/ocean-bedroom-wide.webp",
-        alt: "The Ocean room: double bed with paisley bedding, turquoise blackout curtains and a flat-screen TV",
+        alt: "Double bed with paisley bedding, turquoise blackout curtains and a flat-screen TV",
+        kind: "room",
       },
       {
         src: "/images/building-exterior.png",
         alt: "The exterior of the building, with its private entrance and stairway",
+        kind: "place",
       },
       {
         src: "/images/seven-eleven.png",
         alt: "A 7-Eleven convenience store a short walk from the building",
+        kind: "place",
       },
       {
         src: "/images/laundry-info.png",
         alt: "Guest guide to the nearby coin laundry at 3-12-14 Takadanobaba, open 07:00–23:45",
+        kind: "place",
       },
     ],
     amenityGroups: [
@@ -220,6 +236,10 @@ export function getRoom(slug: string): Room | undefined {
 
 export function bookableRooms(): Room[] {
   return ROOMS.filter((room) => room.bookable);
+}
+
+export function photosOfKind(room: Room, kind: Photo["kind"]): Photo[] {
+  return room.photos.filter((photo) => photo.kind === kind);
 }
 
 export function formatJpy(amount: number): string {

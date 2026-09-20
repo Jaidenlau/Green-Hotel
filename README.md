@@ -4,9 +4,10 @@ A small Next.js site so guests can book Green Hotel rooms without going
 through Airbnb (and without Airbnb's service fee). It has two pages plus a
 booking flow:
 
-- `/` — the rooms, with live availability
+- `/` — booking. Calendar and Book button at the top, then photos of every
+  room, then the building and the area.
 - `/about` — about the team, and a contact form
-- `/rooms/ocean` — the room itself, with a calendar and a Book button
+- `/rooms/ocean` — the full room page: every photo, every amenity
 
 ## How the Airbnb sync works
 
@@ -104,32 +105,52 @@ npm run typecheck
 npm run build
 ```
 
-## Deploying
+## Deploying to Railway
 
-Built for [Vercel](https://vercel.com): import the repo, paste the same
-variables from `.env.example` into **Settings → Environment Variables**, deploy.
-Any Node host works — it needs a server, not just static files, because of the
-calendar sync and Stripe calls.
+1. **New Project → Deploy from GitHub repo**, and pick this repo.
+2. Railway detects Next.js on its own. It runs `npm run build`, then
+   `npm start`, and passes the port in `PORT` — which `next start` picks up, so
+   there is nothing to configure.
+3. Paste every variable from `.env.example` into **Variables**. Do this
+   *before* the first deploy: anything starting with `NEXT_PUBLIC_` is baked
+   into the build, so adding it later means redeploying.
+4. **Settings → Networking → Generate Domain** (or point your own domain at
+   it), then set `NEXT_PUBLIC_SITE_URL` to that address and redeploy. Stripe
+   uses it to send guests back after payment, and it is the base of the
+   calendar URL you give Airbnb.
 
-Set `NEXT_PUBLIC_SITE_URL` to the real domain once you have one; Stripe uses it
-to send guests back after payment.
+It needs a Node server, not a static host, because of the calendar sync and the
+Stripe calls — Railway, Vercel, Fly and a plain VPS all work. There is no
+database to add.
 
 ## Changing rooms, prices and photos
 
 Nearly everything lives in [`lib/rooms.ts`](lib/rooms.ts): names, prices, the
 direct-booking discount, minimum and maximum stay, amenities and photo lists.
-Photos go in `public/images/`.
+Photos go in `public/images/` and each one is tagged `kind: "room"` or
+`kind: "place"`. Only `"room"` photos appear in the homepage room gallery —
+that keeps the street, the building and the coin-laundry notice out of a
+section headed "The rooms".
 
 **Before going live, check these**, which are currently placeholders:
 
 | Setting | Currently | Where |
 | --- | --- | --- |
-| Ocean nightly rate | ¥12,000 | `lib/rooms.ts` |
-| Cleaning fee | ¥3,000 | `lib/rooms.ts` |
-| Direct discount | 20% | `lib/rooms.ts` |
+| Ocean nightly rate | ¥11,800 | `lib/rooms.ts` |
+| Cleaning fee | ¥0 — included in the rate | `lib/rooms.ts` |
 | Max guests | 2 | `lib/rooms.ts` |
 | Check-in / check-out | 16:00 / 10:00 | `lib/rooms.ts` (`HOTEL`) |
 | Contact email and phone | unset | `.env.local` |
+
+**About the ¥11,800.** That was roughly US$75 at ¥156.9 to the dollar on
+20 September 2026. Guests are charged in yen, so the dollar equivalent drifts
+with the exchange rate — if US$75 is the number that matters, check the rate
+now and again rather than assuming it still holds.
+
+To advertise a direct-booking saving, set `directDiscountPercent` above 0.
+`nightlyRateJpy` then shows struck through as the "normal" price, guests are
+charged the discounted one, and a "% off direct" badge appears. It is currently
+`0`, so ¥11,800 is simply the price.
 
 The second room is a placeholder. Fill in its entry in `lib/rooms.ts` and set
 `bookable: true` to put it on sale.
