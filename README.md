@@ -152,8 +152,13 @@ To advertise a direct-booking saving, set `directDiscountPercent` above 0.
 charged the discounted one, and a "% off direct" badge appears. It is currently
 `0`, so ¥11,800 is simply the price.
 
-The second room is a placeholder. Fill in its entry in `lib/rooms.ts` and set
-`bookable: true` to put it on sale.
+Rooms 2, 3 and 4 are placeholders, built from the `placeholderRoom()` helper
+at the top of `lib/rooms.ts`. They appear on the site as "opening soon" with a
+"photo coming soon" tile and cannot be booked. To put one on sale, replace its
+`placeholderRoom(n)` entry with a full room object (copy Ocean's), add its
+photos, set `bookable: true`, and set its `AIRBNB_ICAL_ROOM_n` variable — a
+room without that variable refuses bookings rather than risk a clash. Delete
+any placeholders you don't need, or copy one to add more.
 
 ## A note on cancellations and refunds
 

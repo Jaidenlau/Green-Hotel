@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import type { Photo } from "@/lib/rooms";
 
-export type GalleryItem = Photo & { roomName: string };
+export type GalleryItem = Photo & {
+  roomName: string;
+  /** Marks a room that exists but is not on sale yet. */
+  comingSoon?: boolean;
+};
 
 export function Gallery({ items }: { items: GalleryItem[] }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -58,8 +62,13 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="object-cover transition duration-500 group-hover:scale-[1.04]"
               />
-              <span className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-left text-xs font-medium text-paper">
+              <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-left text-xs font-medium text-paper">
                 {item.roomName}
+                {item.comingSoon ? (
+                  <span className="rounded-full bg-paper/20 px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                    Soon
+                  </span>
+                ) : null}
               </span>
             </button>
           </li>

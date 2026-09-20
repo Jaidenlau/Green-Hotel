@@ -95,7 +95,7 @@ describe("validateStay", () => {
   });
 
   it("refuses rooms that are not on sale yet", () => {
-    const placeholder = getRoom("room-two") as Room;
+    const placeholder = getRoom("room-2") as Room;
     expect(
       validateStay(placeholder, availability(), "2026-03-01", "2026-03-04").ok,
     ).toBe(false);

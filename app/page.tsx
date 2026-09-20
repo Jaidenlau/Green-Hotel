@@ -15,10 +15,13 @@ import { stripeConfigured } from "@/lib/stripe";
 export default function HomePage() {
   const rooms = bookableRooms();
   const upcoming = ROOMS.filter((room) => !room.bookable);
-  const roomPhotos: GalleryItem[] = rooms.flatMap((room) =>
+  // Every room, not just the bookable ones — an unlisted room still shows
+  // here, with a placeholder tile, so the floor is visibly accounted for.
+  const roomPhotos: GalleryItem[] = ROOMS.flatMap((room) =>
     photosOfKind(room, "room").map((photo) => ({
       ...photo,
       roomName: room.name,
+      comingSoon: !room.bookable,
     })),
   );
   // The building, the street, the coin laundry. Useful, but not rooms — so
@@ -46,8 +49,9 @@ export default function HomePage() {
         <section id="rooms" className="shell scroll-mt-20 pt-20">
           <h2 className="font-display text-3xl sm:text-4xl">The rooms</h2>
           <p className="mt-2 max-w-xl text-ink-soft">
-            Every photo here is of a room you can book. Tap one to see it full
-            size.
+            Tap a photo to see it full size. Rooms marked “soon” aren&apos;t
+            taking bookings yet — message us and we&apos;ll tell you when they
+            open.
           </p>
           <div className="mt-8">
             <Gallery items={roomPhotos} />

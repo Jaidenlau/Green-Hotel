@@ -80,6 +80,33 @@ export const HOTEL = {
   ],
 } as const;
 
+/** An unlisted room: visible as "opening soon", never bookable. */
+function placeholderRoom(number: number): Room {
+  return {
+    slug: `room-${number}`,
+    name: `Room ${number}`,
+    tagline: "Name, photos and price to come.",
+    bookable: false,
+    nightlyRateJpy: 0,
+    cleaningFeeJpy: 0,
+    minNights: 1,
+    maxNights: 28,
+    directDiscountPercent: 0,
+    description: [
+      "This room isn't listed yet. Photos, amenities and pricing will be added here.",
+    ],
+    photos: [
+      {
+        src: "/images/placeholder-room.png",
+        alt: `Room ${number} — photo coming soon`,
+        kind: "room",
+      },
+    ],
+    amenityGroups: [],
+    airbnbIcalEnvVar: `AIRBNB_ICAL_ROOM_${number}`,
+  };
+}
+
 export const ROOMS: Room[] = [
   {
     slug: "ocean",
@@ -211,23 +238,26 @@ export const ROOMS: Room[] = [
     ],
     airbnbIcalEnvVar: "AIRBNB_ICAL_OCEAN",
   },
-  {
-    slug: "room-two",
-    name: "Second room",
-    tagline: "Details coming soon.",
-    bookable: false,
-    nightlyRateJpy: 0,
-    cleaningFeeJpy: 0,
-    minNights: 1,
-    maxNights: 28,
-    directDiscountPercent: 0,
-    description: [
-      "This room is not listed yet. Photos, amenities and pricing will be added here.",
-    ],
-    photos: [],
-    amenityGroups: [],
-    airbnbIcalEnvVar: "AIRBNB_ICAL_ROOM_TWO",
-  },
+  // ---------------------------------------------------------------------
+  // Placeholders. Each one shows on the site as "opening soon" with a
+  // "photo coming soon" tile, and cannot be booked.
+  //
+  // To turn one into a real room:
+  //   1. Put its photos in public/images/ and list them under `photos`
+  //      (kind: "room" for the room itself, kind: "place" for the building
+  //      or the street).
+  //   2. Fill in name, tagline, size, beds, guests, floor, rate and
+  //      description, and copy the amenityGroups from Ocean as a starting
+  //      point.
+  //   3. Set `bookable: true`.
+  //   4. Add its Airbnb export URL to .env as the variable named in
+  //      `airbnbIcalEnvVar` — without it the room refuses to take bookings.
+  //
+  // Delete any you don't need, or copy one to add more.
+  // ---------------------------------------------------------------------
+  placeholderRoom(2),
+  placeholderRoom(3),
+  placeholderRoom(4),
 ];
 
 export function getRoom(slug: string): Room | undefined {
