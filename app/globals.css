@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #12211a;
+  --color-ink-soft: #40584c;
+  --color-ink-faint: #74897e;
+
+  --color-paper: #fbfaf6;
+  --color-paper-raised: #ffffff;
+  --color-line: #e3e1d8;
+
+  --color-forest: #1f5f46;
+  --color-forest-dark: #164533;
+  --color-forest-soft: #eaf2ed;
+
+  --color-sea: #3aa8b8;
+  --color-clay: #b4593a;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman",
+    serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .input {
+    margin-top: 0.25rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-line);
+    background-color: var(--color-paper);
+    padding: 0.5rem 0.75rem;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+  }
+
+  .input::placeholder {
+    color: var(--color-ink-faint);
+  }
+
+  .shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding-inline: 1.25rem;
+  }
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
