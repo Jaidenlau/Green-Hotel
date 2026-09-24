@@ -2,6 +2,9 @@ import { Suspense } from "react";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
+import { calendarConnected } from "@/lib/availability";
+import { emailConfigured } from "@/lib/email";
+import { stripeConfigured } from "@/lib/stripe";
 import { HOTEL } from "@/lib/rooms";
 
 export const metadata: Metadata = {
@@ -11,6 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  // Don't advertise a sync or a payment flow that isn't switched on yet.
+  const syncLive = calendarConnected();
+  const paymentsLive = stripeConfigured();
+
   return (
     <div className="shell py-12 sm:py-16">
       <header className="max-w-2xl">
@@ -43,16 +50,26 @@ export default function AboutPage() {
             less and we keep more of what you pay — which goes straight back
             into the rooms.
           </p>
-          <p>
-            The calendar on this site reads our Airbnb calendar directly, so a
-            date shown as free really is free. If anything goes wrong with that
-            sync we turn instant booking off rather than risk double-booking
-            you.
-          </p>
-          <p>
-            Payment is handled by Stripe. Your card details go to them, never to
-            us.
-          </p>
+          {syncLive ? (
+            <p>
+              The calendar on this site reads our Airbnb calendar directly, so a
+              date shown as free really is free. If anything goes wrong with
+              that sync we turn instant booking off rather than risk
+              double-booking you.
+            </p>
+          ) : (
+            <p>
+              Tell us the nights you want and we&apos;ll confirm them by email,
+              usually the same day. We check every request against our calendar
+              by hand before confirming, so you will never be double-booked.
+            </p>
+          )}
+          {paymentsLive ? (
+            <p>
+              Payment is handled by Stripe. Your card details go to them, never
+              to us.
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -114,7 +131,10 @@ export default function AboutPage() {
               <div className="h-96 animate-pulse rounded-2xl border border-line bg-paper-raised" />
             }
           >
-            <ContactForm fallbackEmail={HOTEL.contactEmail} />
+            <ContactForm
+              fallbackEmail={HOTEL.contactEmail}
+              emailEnabled={emailConfigured() && Boolean(process.env.OWNER_EMAIL)}
+            />
           </Suspense>
         </div>
       </section>

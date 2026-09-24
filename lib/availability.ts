@@ -11,7 +11,7 @@
 import { forRoom, listDirectBookings, type DirectBooking } from "./bookings";
 import { addDays, nightsBetween, todayInHotelTz } from "./dates";
 import { parseICal, type DateRange } from "./ical";
-import { getRoom, type Room } from "./rooms";
+import { bookableRooms, getRoom, type Room } from "./rooms";
 
 export type BlockedRange = DateRange & {
   source: "airbnb" | "direct" | "hold";
@@ -26,9 +26,17 @@ export type Availability = {
   firstBookableNight: string;
   /** Last night a guest may book. */
   lastBookableNight: string;
-  /** True when every source answered. False means booking must be disabled. */
+  /**
+   * - "live": every calendar answered, so instant booking is safe.
+   * - "enquiry": the room's Airbnb calendar has not been connected yet. A
+   *   deliberate setup state, not a fault — the site takes date requests by
+   *   message instead of selling nights it cannot verify.
+   * - "degraded": a calendar IS connected but could not be read just now.
+   */
+  mode: "live" | "enquiry" | "degraded";
+  /** True only in "live" mode. Instant booking requires it. */
   synced: boolean;
-  /** Human-readable reason booking is disabled, when `synced` is false. */
+  /** Guest-facing explanation when booking is disabled. */
   syncError?: string;
   /** When the Airbnb calendar was last read, ISO 8601. */
   lastSyncedAt: string;
@@ -45,6 +53,14 @@ export const BOOKING_WINDOW_DAYS = 365;
 const SYNC_UNAVAILABLE =
   "We can't confirm live availability at the moment.";
 
+/**
+ * Shown before the Airbnb calendar has been connected. Deliberately not an
+ * error: at this stage the site is a working enquiry site, and saying
+ * "something went wrong" about a step nobody has taken yet would be a lie.
+ */
+const NOT_CONNECTED_YET =
+  "We confirm dates by message. Choose the nights you want and send us a request — we'll reply the same day.";
+
 const ICAL_CACHE_TTL_MS = 5 * 60_000;
 const ICAL_FETCH_TIMEOUT_MS = 10_000;
 
@@ -53,16 +69,14 @@ const icalCache = new Map<string, IcalCacheEntry>();
 
 async function fetchAirbnbCalendar(
   room: Room,
-): Promise<{ ranges: DateRange[]; error?: string }> {
+): Promise<{ ranges: DateRange[]; error?: string; unconfigured?: boolean }> {
   const url = process.env[room.airbnbIcalEnvVar];
 
   if (!url) {
-    // Not wired up yet. This is a configuration gap, not a transient failure,
-    // so refuse to sell rather than pretending the room is free.
-    console.error(
-      `[availability] ${room.slug}: ${room.airbnbIcalEnvVar} is not set, so the Airbnb calendar cannot be read.`,
-    );
-    return { ranges: [], error: SYNC_UNAVAILABLE };
+    // Nobody has connected this room's calendar yet. Still no instant booking
+    // — we cannot verify a night we cannot see — but this is a setup state,
+    // not a failure, and the site says so in those terms.
+    return { ranges: [], unconfigured: true };
   }
 
   const cached = icalCache.get(room.slug);
@@ -120,6 +134,7 @@ export async function getAvailability(
   ]);
 
   if (airbnb.error) errors.push(airbnb.error);
+  const unconfigured = Boolean(airbnb.unconfigured);
 
   for (const range of airbnb.ranges) {
     blockedRanges.push({ ...range, source: "airbnb" });
@@ -143,18 +158,37 @@ export async function getAvailability(
     }
   }
 
+  // A real failure outranks "not set up yet": if one calendar is broken we
+  // must not present the room as merely awaiting configuration.
+  const mode: Availability["mode"] = errors.length
+    ? "degraded"
+    : unconfigured
+      ? "enquiry"
+      : "live";
+
   return {
     roomSlug,
     blockedNights: [...nights].sort(),
     blockedRanges,
     firstBookableNight,
     lastBookableNight,
-    synced: errors.length === 0,
-    // One message, whatever went wrong. The specifics are in the server log;
+    mode,
+    synced: mode === "live",
+    // One message per mode. The specifics of a failure are in the server log;
     // a guest can only act on "send us a message", so that is what we say.
-    syncError: errors.length ? SYNC_UNAVAILABLE : undefined,
+    syncError:
+      mode === "live"
+        ? undefined
+        : mode === "enquiry"
+          ? NOT_CONNECTED_YET
+          : SYNC_UNAVAILABLE,
     lastSyncedAt: new Date().toISOString(),
   };
+}
+
+/** True once at least one bookable room has its Airbnb calendar connected. */
+export function calendarConnected(): boolean {
+  return bookableRooms().some((room) => Boolean(process.env[room.airbnbIcalEnvVar]));
 }
 
 export type StayCheck =

@@ -10,7 +10,14 @@ type Status =
   | { kind: "sent" }
   | { kind: "error"; message: string };
 
-export function ContactForm({ fallbackEmail }: { fallbackEmail: string }) {
+export function ContactForm({
+  fallbackEmail,
+  emailEnabled,
+}: {
+  fallbackEmail: string;
+  /** False until Resend and OWNER_EMAIL are set. */
+  emailEnabled: boolean;
+}) {
   const params = useSearchParams();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
@@ -47,6 +54,19 @@ export function ContactForm({ fallbackEmail }: { fallbackEmail: string }) {
         message: error instanceof Error ? error.message : "Could not send.",
       });
     }
+  }
+
+  // Sending is not wired up yet. Showing a form that always fails would waste
+  // the guest's time, so hand them the address instead.
+  if (!emailEnabled) {
+    return (
+      <MailtoFallback
+        email={fallbackEmail}
+        roomSlug={roomSlug}
+        checkIn={checkIn}
+        checkOut={checkOut}
+      />
+    );
   }
 
   if (status.kind === "sent") {
@@ -165,6 +185,82 @@ export function ContactForm({ fallbackEmail }: { fallbackEmail: string }) {
 
     </form>
   );
+}
+
+function MailtoFallback({
+  email,
+  roomSlug,
+  checkIn,
+  checkOut,
+}: {
+  email: string;
+  roomSlug: string;
+  checkIn: string;
+  checkOut: string;
+}) {
+  if (!email) {
+    return (
+      <div className="rounded-2xl border border-line bg-paper-raised p-6 text-sm text-ink-soft">
+        <p>
+          Our contact details aren&apos;t published here yet. If you found this
+          page through a listing, reply on that listing and we&apos;ll pick it
+          up.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-paper-raised p-6">
+      <h3 className="font-display text-xl">Email us</h3>
+      <p className="mt-2 text-sm text-ink-soft">
+        Tell us which nights you want, how many of you there are, and anything
+        you need from us. We usually reply the same day.
+      </p>
+      <a
+        href={mailtoHref({ email, roomSlug, checkIn, checkOut })}
+        className="mt-5 inline-block rounded-xl bg-forest px-5 py-3 font-medium text-paper transition hover:bg-forest-dark"
+      >
+        {email}
+      </a>
+    </div>
+  );
+}
+
+/**
+ * Carries whatever the guest already chose in the booking calendar into their
+ * mail client, so picking dates and then landing here doesn't lose them.
+ */
+function mailtoHref({
+  email,
+  roomSlug,
+  checkIn,
+  checkOut,
+}: {
+  email: string;
+  roomSlug: string;
+  checkIn: string;
+  checkOut: string;
+}): string {
+  const room = ROOMS.find((r) => r.slug === roomSlug);
+  const subject = room
+    ? `Booking enquiry — ${room.name}`
+    : "Booking enquiry — Green Hotel";
+
+  const body = [
+    "Hello,",
+    "",
+    room ? `I'd like to book ${room.name}.` : "I'd like to book a room.",
+    checkIn ? `Check-in: ${checkIn}` : "Check-in: ",
+    checkOut ? `Check-out: ${checkOut}` : "Check-out: ",
+    "Number of guests: ",
+    "",
+    "Thank you,",
+  ].join("\n");
+
+  return `mailto:${email}?subject=${encodeURIComponent(
+    subject,
+  )}&body=${encodeURIComponent(body)}`;
 }
 
 function Field({

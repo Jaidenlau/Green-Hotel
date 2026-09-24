@@ -15,6 +15,7 @@ function availability(
     blockedRanges: [],
     firstBookableNight: "2026-01-01",
     lastBookableNight: "2026-12-31",
+    mode: "live",
     synced: true,
     lastSyncedAt: new Date().toISOString(),
     ...rest,
@@ -68,13 +69,25 @@ describe("validateStay", () => {
   it("refuses to book when the calendar could not be synced", () => {
     const result = validateStay(
       room,
-      availability({ synced: false, syncError: "Airbnb is down." }),
+      availability({ mode: "degraded", synced: false, syncError: "Airbnb is down." }),
       "2026-03-01",
       "2026-03-04",
     );
     // Failing closed is the whole point: an unsynced calendar must never
     // read as "everything is free".
     expect(result).toEqual({ ok: false, reason: "Airbnb is down." });
+  });
+
+  it("refuses to book a room whose calendar is not connected yet", () => {
+    // "Not set up" must behave exactly like "broken" at the point of sale:
+    // an unread calendar can never be assumed empty.
+    const result = validateStay(
+      room,
+      availability({ mode: "enquiry", synced: false, syncError: "Ask us." }),
+      "2026-03-01",
+      "2026-03-04",
+    );
+    expect(result).toEqual({ ok: false, reason: "Ask us." });
   });
 
   it("rejects dates in the past and backwards ranges", () => {

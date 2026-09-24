@@ -110,6 +110,9 @@ export function BookingWidget({ room, paymentsEnabled }: Props) {
   }, [nights, quote, room.maxNights, room.minNights]);
 
   const synced = availability?.synced ?? false;
+  // "enquiry" means nobody has connected the Airbnb calendar yet. That is a
+  // setup step, not a fault, so it gets calm copy instead of a warning.
+  const mode = availability?.mode ?? "degraded";
   const canBook =
     paymentsEnabled &&
     synced &&
@@ -190,14 +193,17 @@ export function BookingWidget({ room, paymentsEnabled }: Props) {
               isSelectable={isSelectable}
               onPick={handlePick}
             />
-            <Legend />
-            {!synced ? (
+            <Legend showBooked={mode !== "enquiry"} />
+            {mode === "enquiry" ? (
+              <div className="mt-4">
+                <Notice tone="info">{availability.syncError}</Notice>
+              </div>
+            ) : mode === "degraded" ? (
               <div className="mt-4">
                 <Notice tone="warn">
-                  {availability.syncError ??
-                    "We can't confirm live availability right now."}{" "}
-                  To be safe we&apos;ve turned off instant booking — send us an
-                  enquiry and we&apos;ll confirm by email.
+                  {availability.syncError}{" "}
+                  To be safe we&apos;ve turned off instant booking — send us a
+                  request and we&apos;ll confirm by email.
                 </Notice>
               </div>
             ) : null}
@@ -335,11 +341,17 @@ export function BookingWidget({ room, paymentsEnabled }: Props) {
               : "block w-full rounded-xl bg-forest px-4 py-3 text-center font-medium text-paper transition hover:bg-forest-dark"
           }
         >
-          {paymentsEnabled ? "Or ask us a question first" : "Request these dates"}
+          {paymentsEnabled && synced
+            ? "Or ask us a question first"
+            : quote
+              ? "Request these dates"
+              : "Ask us about dates"}
         </a>
 
         <p className="text-center text-xs text-ink-faint">
-          Payment is taken securely by Stripe. We never see your card details.
+          {paymentsEnabled && synced
+            ? "Payment is taken securely by Stripe. We never see your card details."
+            : "Sending a request doesn't book the room or charge you — we'll confirm by email first."}
         </p>
       </div>
     </div>
@@ -375,7 +387,7 @@ function Notice({
   tone,
 }: {
   children: React.ReactNode;
-  tone: "warn" | "error";
+  tone: "info" | "warn" | "error";
 }) {
   return (
     <p
@@ -383,7 +395,9 @@ function Notice({
       className={
         tone === "error"
           ? "rounded-lg border border-clay/30 bg-clay/5 px-3 py-2 text-sm text-clay"
-          : "rounded-lg border border-line bg-forest-soft px-3 py-2 text-sm text-ink-soft"
+          : tone === "warn"
+            ? "rounded-lg border border-clay/25 bg-clay/5 px-3 py-2 text-sm text-ink-soft"
+            : "rounded-lg border border-line bg-forest-soft px-3 py-2 text-sm text-ink-soft"
       }
     >
       {children}
@@ -404,15 +418,17 @@ function CalendarSkeleton() {
   );
 }
 
-function Legend() {
+function Legend({ showBooked }: { showBooked: boolean }) {
   return (
     <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-faint">
       <li className="flex items-center gap-1.5">
         <span className="size-2.5 rounded-full bg-forest" /> Your stay
       </li>
-      <li className="flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-line" /> Booked
-      </li>
+      {showBooked ? (
+        <li className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-line" /> Booked
+        </li>
+      ) : null}
       <li>Prices update as you pick dates.</li>
     </ul>
   );

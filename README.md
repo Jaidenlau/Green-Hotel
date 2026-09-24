@@ -9,6 +9,25 @@ booking flow:
 - `/about` — about the team, and a contact form
 - `/rooms/ocean` — the full room page: every photo, every amenity
 
+## Three stages of setup
+
+The site is built so it is useful before either integration is connected, and
+each one can be switched on later by setting variables — no code changes.
+
+| Stage | What you set | What guests get |
+| --- | --- | --- |
+| 1. Enquiry | `NEXT_PUBLIC_CONTACT_EMAIL` | The full site. Guests pick dates and email you a request; you confirm by hand. |
+| 2. Synced | `+ AIRBNB_ICAL_*` | Nights Airbnb has taken are greyed out automatically. |
+| 3. Instant | `+ STRIPE_SECRET_KEY` | Guests pay online and book themselves. |
+
+Deploy at stage 1 today; the pages already say the right thing for whichever
+stage you are at, so nothing reads as half-finished. At stage 1 and 2 the Book
+button is a "Request these dates" button instead, because the site refuses to
+sell a night it cannot verify.
+
+`NEXT_PUBLIC_CONTACT_EMAIL` is the one variable worth setting before you
+launch — without it there is no way for a guest to reach you.
+
 ## How the Airbnb sync works
 
 This is the part that stops you double-booking, so it is worth understanding.
